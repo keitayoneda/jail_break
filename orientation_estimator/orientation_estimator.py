@@ -9,17 +9,17 @@ import numpy as np
 
 
 def getScewMat(wx, wy, wz):
-    return np.array([[0, -wz, wy, wx],
-                     [wz, 0, -wx, wy],
-                     [-wy, wx, 0, wz],
-                     [-wx, -wy, -wz, 0]])
+    return np.array([[0, -wx, wy, -wz],
+                     [wx, 0, -wz, wy],
+                     [wy, wz, 0, -wx],
+                     [wz, -wy, wx, 0]])
 
 
 def rotate(quat, v):
-    q_x = quat[0, 0]
-    q_y = quat[1, 0]
-    q_z = quat[2, 0]
-    q_w = quat[3, 0]
+    q_w = quat[0, 0]
+    q_x = quat[1, 0]
+    q_y = quat[2, 0]
+    q_z = quat[3, 0]
     v_x = v[0]
     v_y = v[1]
     v_z = v[2]
@@ -44,27 +44,27 @@ def getAFunc(bmx, dt):
 
 def getCFunc(v):
     def CFunc(q):
-        q_x = q[0, 0]
-        q_y = q[1, 0]
-        q_z = q[2, 0]
-        q_w = q[3, 0]
+        q_w = q[0, 0]
+        q_x = q[1, 0]
+        q_y = q[2, 0]
+        q_z = q[3, 0]
         v_x = v[0]
         v_y = v[1]
         v_z = v[2]
 
         C = np.zeros((3, 4))
-        C[0, 0] = 2*q_x*v_x + 2*q_y*v_y + 2*q_z*v_z
-        C[0, 1] = 2*q_w*v_z + 2*q_x*v_y - 2*q_y*v_x
-        C[0, 2] = -2*q_w*v_y + 2*q_x*v_z - 2*q_z*v_x
-        C[0, 3] = 2*q_w*v_x + 2*q_y*v_z - 2*q_z*v_y
-        C[1, 0] = -2*q_w*v_z - 2*q_x*v_y + 2*q_y*v_x
-        C[1, 1] = 2*q_x*v_x + 2*q_y*v_y + 2*q_z*v_z
-        C[1, 2] = 2*q_w*v_x + 2*q_y*v_z - 2*q_z*v_y
-        C[1, 3] = 2*q_w*v_y - 2*q_x*v_z + 2*q_z*v_x
-        C[2, 0] = 2*q_w*v_y - 2*q_x*v_z + 2*q_z*v_x
-        C[2, 1] = -2*q_w*v_x - 2*q_y*v_z + 2*q_z*v_y
-        C[2, 2] = 2*q_x*v_x + 2*q_y*v_y + 2*q_z*v_z
-        C[2, 3] = 2*q_w*v_z + 2*q_x*v_y - 2*q_y*v_x
+        C[0, 0] = 2*q_w*v_x + 2*q_y*v_z - 2*q_z*v_y
+        C[0, 1] = 2*q_x*v_x + 2*q_y*v_y + 2*q_z*v_z
+        C[0, 2] = 2*q_w*v_z + 2*q_x*v_y - 2*q_y*v_x
+        C[0, 3] = -2*q_w*v_y + 2*q_x*v_z - 2*q_z*v_x
+        C[1, 0] = 2*q_w*v_y - 2*q_x*v_z + 2*q_z*v_x
+        C[1, 1] = -2*q_w*v_z - 2*q_x*v_y + 2*q_y*v_x
+        C[1, 2] = 2*q_x*v_x + 2*q_y*v_y + 2*q_z*v_z
+        C[1, 3] = 2*q_w*v_x + 2*q_y*v_z - 2*q_z*v_y
+        C[2, 0] = 2*q_w*v_z + 2*q_x*v_y - 2*q_y*v_x
+        C[2, 1] = 2*q_w*v_y - 2*q_x*v_z + 2*q_z*v_x
+        C[2, 2] = -2*q_w*v_x - 2*q_y*v_z + 2*q_z*v_y
+        C[2, 3] = 2*q_x*v_x + 2*q_y*v_y + 2*q_z*v_z
         return C
     return CFunc
 
@@ -82,7 +82,6 @@ def getObsFunc(bmx):
         obs_vec = np.zeros((3, 1))
         obs_vec[:3] = obs_g
         # obs_vec[3:6] = obs_mag
-
         return obs_vec
     return obsFunc
 

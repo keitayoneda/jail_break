@@ -7,14 +7,14 @@ import threading
 
 
 def rotate(quat, v):
-    q_x = quat[0]
-    q_y = quat[1]
-    q_z = quat[2]
-    q_w = quat[3]
+    q_w = quat[0]
+    q_x = quat[1]
+    q_y = quat[2]
+    q_z = quat[3]
     v_x = v[0]
     v_y = v[1]
     v_z = v[2]
-    rot_v = np.zeros(3)
+    rot_v = [0 for _ in range(3)]
     rot_v[0] = q_w*(q_w*v_x + q_y*v_z - q_z*v_y) + q_x*(q_x*v_x + q_y*v_y + q_z*v_z) + \
         q_y*(q_w*v_z + q_x*v_y - q_y*v_x) - q_z*(q_w*v_y - q_x*v_z + q_z*v_x)
     rot_v[1] = q_w*(q_w*v_y - q_x*v_z + q_z*v_x) - q_x*(q_w*v_z + q_x*v_y - q_y*v_x) + \
@@ -49,14 +49,14 @@ origin_y = 200
 
 def projection(v, zplain=0):
     # 3次元ベクトルを2次元ベクトルに射影する
-    return np.array([v[0], v[1]])
+    return [v[0], v[1]]
 
 
 def perspective(v, plain_z):
     # 3次元ベクトルを遠近法で2次元ベクトルに射影する
     z = v[2]
     alpha = plain_z / (plain_z - z)
-    return np.array([v[0] * alpha, v[1] * alpha])
+    return [v[0] * alpha, v[1] * alpha]
 
 
 def drawCoordinate(quat):
@@ -87,7 +87,7 @@ def drawCoordinate(quat):
 
 def drawMagnetVec(quat, vec):
     # 3次元ベクトルを原点から描画する
-    vec_rotated = quaternion.rotate_vectors(quat, vec)
+    vec_rotated = rotate(quat, vec)
     z_plain = 150
     vec_2d = projection(vec_rotated, z_plain)
     mag_axis.x = origin_x
@@ -107,7 +107,7 @@ def main():
         return pyglet.app.run()
     threading.Thread(target=pyglet_func).start()
     sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
-    server_address = "192.168.10.104"
+    server_address = "192.168.1.211"
     server_port = 20021
     sock.connect((server_address, server_port))
     while True:
@@ -121,9 +121,8 @@ def main():
         if len(data_float_list) != 7:
             continue
         quat = data_float_list[:4]
-        magnet_vec = np.array(data_float_list[4:])
-        magnet_vec = magnet_vec / np.linalg.norm(magnet_vec) * 100
-        print(magnet_vec)
+        magnet_vec = data_float_list[4:]
+        magnet_vec = np.array(magnet_vec) / np.linalg.norm(magnet_vec) * 100
         drawCoordinate(quat)
         drawMagnetVec(quat, magnet_vec)
 
