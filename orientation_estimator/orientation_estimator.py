@@ -24,9 +24,12 @@ def rotate(quat, v):
     v_y = v[1]
     v_z = v[2]
     rot_v = np.zeros((3, 1))
-    rot_v[0] = q_w*(q_w*v_x + q_y*v_z - q_z*v_y) + q_x*(q_x*v_x + q_y*v_y + q_z*v_z) + q_y*(q_w*v_z + q_x*v_y - q_y*v_x) - q_z*(q_w*v_y - q_x*v_z + q_z*v_x)
-    rot_v[1] = q_w*(q_w*v_y - q_x*v_z + q_z*v_x) - q_x*(q_w*v_z + q_x*v_y - q_y*v_x) + q_y*(q_x*v_x + q_y*v_y + q_z*v_z) + q_z*(q_w*v_x + q_y*v_z - q_z*v_y)
-    rot_v[2] = q_w*(q_w*v_z + q_x*v_y - q_y*v_x) + q_x*(q_w*v_y - q_x*v_z + q_z*v_x) - q_y*(q_w*v_x + q_y*v_z - q_z*v_y) + q_z*(q_x*v_x + q_y*v_y + q_z*v_z)
+    rot_v[0] = q_w*(q_w*v_x + q_y*v_z - q_z*v_y) + q_x*(q_x*v_x + q_y*v_y + q_z*v_z) + \
+        q_y*(q_w*v_z + q_x*v_y - q_y*v_x) - q_z*(q_w*v_y - q_x*v_z + q_z*v_x)
+    rot_v[1] = q_w*(q_w*v_y - q_x*v_z + q_z*v_x) - q_x*(q_w*v_z + q_x*v_y - q_y*v_x) + \
+        q_y*(q_x*v_x + q_y*v_y + q_z*v_z) + q_z*(q_w*v_x + q_y*v_z - q_z*v_y)
+    rot_v[2] = q_w*(q_w*v_z + q_x*v_y - q_y*v_x) + q_x*(q_w*v_y - q_x*v_z + q_z*v_x) - \
+        q_y*(q_w*v_x + q_y*v_z - q_z*v_y) + q_z*(q_x*v_x + q_y*v_y + q_z*v_z)
     return rot_v
 
 
@@ -86,6 +89,7 @@ def getObsFunc(bmx):
 
 def getPredFunc(g):
     g_vec = np.array(g)[:, np.newaxis].reshape(3, 1)
+
     def predFunc(q):
         rot_g = rotate(q, g_vec)
         rot_vec = np.zeros((3, 1))
@@ -147,7 +151,7 @@ def main():
         mag_x, mag_y, mag_z = bmx.getMagnet()
         abs_mag = (mag_x**2 + mag_y**2 + mag_z**2)**0.5
         # w, x, y, z の順に並べる
-        q_str = f"{est_q[3, 0]} {est_q[0, 0]} {est_q[1,0]} {est_q[2, 0]} {mag_x/abs_mag} {mag_y/abs_mag} {mag_z/abs_mag}"
+        q_str = f"{est_q[0, 0]} {est_q[1,0]} {est_q[2, 0]} {est_q[3, 0]} {mag_x/abs_mag} {mag_y/abs_mag} {mag_z/abs_mag}"
         data_server.setSendData(q_str)
         cycle_time = time.time() - prev_time
         sleep_time = dt - cycle_time

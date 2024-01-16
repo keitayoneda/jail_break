@@ -5,6 +5,25 @@ import numpy as np
 import quaternion
 import threading
 
+
+def rotate(quat, v):
+    q_x = quat[0]
+    q_y = quat[1]
+    q_z = quat[2]
+    q_w = quat[3]
+    v_x = v[0]
+    v_y = v[1]
+    v_z = v[2]
+    rot_v = np.zeros(3)
+    rot_v[0] = q_w*(q_w*v_x + q_y*v_z - q_z*v_y) + q_x*(q_x*v_x + q_y*v_y + q_z*v_z) + \
+        q_y*(q_w*v_z + q_x*v_y - q_y*v_x) - q_z*(q_w*v_y - q_x*v_z + q_z*v_x)
+    rot_v[1] = q_w*(q_w*v_y - q_x*v_z + q_z*v_x) - q_x*(q_w*v_z + q_x*v_y - q_y*v_x) + \
+        q_y*(q_x*v_x + q_y*v_y + q_z*v_z) + q_z*(q_w*v_x + q_y*v_z - q_z*v_y)
+    rot_v[2] = q_w*(q_w*v_z + q_x*v_y - q_y*v_x) + q_x*(q_w*v_y - q_x*v_z + q_z*v_x) - \
+        q_y*(q_w*v_x + q_y*v_z - q_z*v_y) + q_z*(q_x*v_x + q_y*v_y + q_z*v_z)
+    return rot_v
+
+
 window = pyglet.window.Window(400, 400)
 batch = pyglet.graphics.Batch()
 
@@ -42,9 +61,12 @@ def perspective(v, plain_z):
 
 def drawCoordinate(quat):
     # 3次元ベクトルを原点から描画する
-    x_vec_rotated = quaternion.rotate_vectors(quat, x_vec)
-    y_vec_rotated = quaternion.rotate_vectors(quat, y_vec)
-    z_vec_rotated = quaternion.rotate_vectors(quat, z_vec)
+    # x_vec_rotated = quaternion.rotate_vectors(quat, x_vec)
+    # y_vec_rotated = quaternion.rotate_vectors(quat, y_vec)
+    # z_vec_rotated = quaternion.rotate_vectors(quat, z_vec)
+    x_vec_rotated = rotate(quat, x_vec)
+    y_vec_rotated = rotate(quat, y_vec)
+    z_vec_rotated = rotate(quat, z_vec)
     z_plain = 150
     x_vec_2d = projection(x_vec_rotated, z_plain)
     y_vec_2d = projection(y_vec_rotated, z_plain)
@@ -98,7 +120,7 @@ def main():
 
         if len(data_float_list) != 7:
             continue
-        quat = quaternion.from_float_array(data_float_list[:4])
+        quat = data_float_list[:4]
         magnet_vec = np.array(data_float_list[4:])
         magnet_vec = magnet_vec / np.linalg.norm(magnet_vec) * 100
         print(magnet_vec)
