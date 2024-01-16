@@ -4,9 +4,9 @@ import time
 
 # ひたすらデータ要求が来たら返すサーバー
 class DataServer:
-    def __init__(self, host_address, host_port):
-        self.host_address = host_address
-        self.host_port = host_port
+    def __init__(self):
+        self.host_address = "192.168.1.211"
+        self.host_port = 20021
         self.socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
         self.socket.bind((self.host_address, self.host_port))
         self.connected_history=[]
@@ -48,9 +48,7 @@ class DataServer:
 
 def main():
     sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
-    host = "192.168.12.50"
-    port = 20021
-    data_server = DataServer(host, port)
+    data_server = DataServer()
     data_server.startAndDetach()
     print("start")
     while True:

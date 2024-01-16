@@ -16,22 +16,17 @@ def getScewMat(wx, wy, wz):
 
 
 def rotate(quat, v):
-    qx = quat[0, 0]
-    qy = quat[1, 0]
-    qz = quat[2, 0]
-    qw = quat[3, 0]
-    vx = v[0]
-    vy = v[1]
-    vz = v[2]
+    q_x = quat[0, 0]
+    q_y = quat[1, 0]
+    q_z = quat[2, 0]
+    q_w = quat[3, 0]
+    v_x = v[0]
+    v_y = v[1]
+    v_z = v[2]
     rot_v = np.zeros((3, 1))
-    rot_v[0] = (qw**2 + qx**2 - qy**2 - qz**2)*vx + 2 * \
-        (qx*qy - qw*qz)*vy + 2*(qx*qz + qw*qy)*vz
-
-    rot_v[1] = 2*(qx*qy + qw*qz)*vx + (qw**2 - qx**2 +
-                                       qy**2 - qz**2)*vy + 2*(qy*qz - qw*qx)*vz
-
-    rot_v[2] = 2*(qx*qz - qw*qy)*vx + 2*(qy*qz + qw*qx) * \
-        vy + (qw**2 - qx**2 - qy**2 + qz**2)*vz
+    rot_v[0] = q_w*(q_w*v_x + q_y*v_z - q_z*v_y) + q_x*(q_x*v_x + q_y*v_y + q_z*v_z) + q_y*(q_w*v_z + q_x*v_y - q_y*v_x) - q_z*(q_w*v_y - q_x*v_z + q_z*v_x)
+    rot_v[1] = q_w*(q_w*v_y - q_x*v_z + q_z*v_x) - q_x*(q_w*v_z + q_x*v_y - q_y*v_x) + q_y*(q_x*v_x + q_y*v_y + q_z*v_z) + q_z*(q_w*v_x + q_y*v_z - q_z*v_y)
+    rot_v[2] = q_w*(q_w*v_z + q_x*v_y - q_y*v_x) + q_x*(q_w*v_y - q_x*v_z + q_z*v_x) - q_y*(q_w*v_x + q_y*v_z - q_z*v_y) + q_z*(q_x*v_x + q_y*v_y + q_z*v_z)
     return rot_v
 
 
@@ -41,53 +36,32 @@ def getAFunc(bmx, dt):
         # gyro[2] = 0
         Ac = 0.5 * getScewMat(*gyro)
         return np.eye(4) + Ac * dt
-
     return AFunc
 
 
-def getCFunc(g, mag):
+def getCFunc(v):
     def CFunc(q):
-        qx = q[0, 0]
-        qy = q[1, 0]
-        qz = q[2, 0]
-        qw = q[3, 0]
-        gx = g[0]
-        gy = g[1]
-        gz = g[2]
-        magx = mag[0]
-        magy = mag[1]
-        magz = mag[2]
+        q_x = q[0, 0]
+        q_y = q[1, 0]
+        q_z = q[2, 0]
+        q_w = q[3, 0]
+        v_x = v[0]
+        v_y = v[1]
+        v_z = v[2]
 
-        C = np.zeros((6, 4))
-        C[0, 0] = 2*qx*gx + 2*qy*gy + 2*qz*gz
-        C[0, 1] = 2*qw*gz + 2*qx*gy - 2*qy*gx
-        C[0, 2] = -2*qw*gy + 2*qx*gz - 2*qz*gx
-        C[0, 3] = 2*qw*gx + 2*qy*gz - 2*qz*gy
-
-        C[1, 0] = -2*qw*gz - 2*qx*gy + 2*qy*gx
-        C[1, 1] = 2*qx*gx + 2*qy*gy + 2*qz*gz
-        C[1, 2] = 2*qw*gx + 2*qy*gz - 2*qz*gy
-        C[1, 3] = 2*qw*gy - 2*qx*gz + 2*qz*gx
-
-        C[2, 0] = 2*qw*gy - 2*qx*gz + 2*qz*gx
-        C[2, 1] = -2*qw*gx - 2*qy*gz + 2*qz*gy
-        C[2, 2] = 2*qx*gx + 2*qy*gy + 2*qz*gz
-        C[2, 3] = 2*qw*gz + 2*qx*gy - 2*qy*gx
-
-        C[3, 0] = 2*qx*magx + 2*qy*magy + 2*qz*magz
-        C[3, 1] = 2*qw*magz + 2*qx*magy - 2*qy*magx
-        C[3, 2] = -2*qw*magy + 2*qx*magz - 2*qz*magx
-        C[3, 3] = 2*qw*magx + 2*qy*magz - 2*qz*magy
-
-        C[4, 0] = -2*qw*magz - 2*qx*magy + 2*qy*magx
-        C[4, 1] = 2*qx*magx + 2*qy*magy + 2*qz*magz
-        C[4, 2] = 2*qw*magx + 2*qy*magz - 2*qz*magy
-        C[4, 3] = 2*qw*magy - 2*qx*magz + 2*qz*magx
-
-        C[5, 0] = 2*qw*magy - 2*qx*magz + 2*qz*magx
-        C[5, 1] = -2*qw*magx - 2*qy*magz + 2*qz*magy
-        C[5, 2] = 2*qx*magx + 2*qy*magy + 2*qz*magz
-        C[5, 3] = 2*qw*magz + 2*qx*magy - 2*qy*magx
+        C = np.zeros((3, 4))
+        C[0, 0] = 2*q_x*v_x + 2*q_y*v_y + 2*q_z*v_z
+        C[0, 1] = 2*q_w*v_z + 2*q_x*v_y - 2*q_y*v_x
+        C[0, 2] = -2*q_w*v_y + 2*q_x*v_z - 2*q_z*v_x
+        C[0, 3] = 2*q_w*v_x + 2*q_y*v_z - 2*q_z*v_y
+        C[1, 0] = -2*q_w*v_z - 2*q_x*v_y + 2*q_y*v_x
+        C[1, 1] = 2*q_x*v_x + 2*q_y*v_y + 2*q_z*v_z
+        C[1, 2] = 2*q_w*v_x + 2*q_y*v_z - 2*q_z*v_y
+        C[1, 3] = 2*q_w*v_y - 2*q_x*v_z + 2*q_z*v_x
+        C[2, 0] = 2*q_w*v_y - 2*q_x*v_z + 2*q_z*v_x
+        C[2, 1] = -2*q_w*v_x - 2*q_y*v_z + 2*q_z*v_y
+        C[2, 2] = 2*q_x*v_x + 2*q_y*v_y + 2*q_z*v_z
+        C[2, 3] = 2*q_w*v_z + 2*q_x*v_y - 2*q_y*v_x
         return C
     return CFunc
 
@@ -98,31 +72,24 @@ def getObsFunc(bmx):
         acc = acc / np.linalg.norm(acc) * 9.8
         obs_g = acc
         # print(f"obs_g : {obs_g}")
-        mag = np.array(bmx.getMagnet())[:, np.newaxis].reshape(3, 1)
-        mag = mag / np.linalg.norm(mag) * 9.8
-        obs_mag = mag
+        # mag = np.array(bmx.getMagnet())[:, np.newaxis].reshape(3, 1)
+        # mag = mag / np.linalg.norm(mag) * 9.8
+        # obs_mag = mag
 
-        obs_vec = np.zeros((6, 1))
+        obs_vec = np.zeros((3, 1))
         obs_vec[:3] = obs_g
-        obs_vec[3:6] = obs_mag
+        # obs_vec[3:6] = obs_mag
 
         return obs_vec
     return obsFunc
 
 
-def getPredFunc(g, mag):
+def getPredFunc(g):
     g_vec = np.array(g)[:, np.newaxis].reshape(3, 1)
-    mag_vec = np.array(mag)[:, np.newaxis].reshape(3, 1)
-    mag_vec = mag_vec / np.linalg.norm(mag_vec)
-
     def predFunc(q):
         rot_g = rotate(q, g_vec)
-        rot_mag = rotate(q, mag_vec)
-        # print(f"rot_g : {rot_g}")
-        rot_vec = np.zeros((6, 1))
-        print("rot_g", rot_g)
+        rot_vec = np.zeros((3, 1))
         rot_vec[:3] = rot_g
-        rot_vec[3:6] = rot_mag
         return rot_vec
     return predFunc
 
@@ -138,9 +105,7 @@ def calcNTheta(quat):
 
 
 def main():
-    host = "192.168.12.50"
-    port = 20021
-    data_server = DataServer(host, port)
+    data_server = DataServer()
     data_server.startAndDetach()
 
     np.set_printoptions(suppress=True)
@@ -157,13 +122,13 @@ def main():
     dt = 0.1
     print_interval = 0.1
     A_func = getAFunc(bmx, dt)
-    C_func = getCFunc(g_base, mag_base)
-    pred_func = getPredFunc(g_base, mag_base)
+    C_func = getCFunc(g_base)
+    pred_func = getPredFunc(g_base)
     obs_func = getObsFunc(bmx)
     initial_x = np.array([[0.0], [0.0], [0.0], [1.0]])
     initial_cov = np.diag([0.5, 0.5, 0.5, 0.5])
     update_cov = np.diag([0.05, 0.05, 0.05, 0.05])
-    obs_cov = np.diag([0.001, 0.001, 0.001, 0.1, 0.1, 0.1])
+    obs_cov = np.diag([0.001, 0.001, 0.001])
     ekf = EKF(initial_x, initial_cov, A_func,
               C_func, pred_func, update_cov, obs_cov)
 
