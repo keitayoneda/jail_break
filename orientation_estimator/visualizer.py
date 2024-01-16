@@ -85,7 +85,7 @@ def main():
         return pyglet.app.run()
     threading.Thread(target=pyglet_func).start()
     sock = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
-    server_address = "192.168.12.50"
+    server_address = "192.168.10.104"
     server_port = 20021
     sock.connect((server_address, server_port))
     while True:

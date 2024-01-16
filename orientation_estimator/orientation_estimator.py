@@ -6,26 +6,44 @@ import time
 import numpy as np
 
 # quaternionはx, y, z, wの順
+
+
 def getScewMat(wx, wy, wz):
     return np.array([[0, -wz, wy, wx],
                      [wz, 0, -wx, wy],
                      [-wy, wx, 0, wz],
                      [-wx, -wy, -wz, 0]])
 
+
 def rotate(quat, v):
-    qv = quat[:3]
-    qw = quat[3,0]
-    rot_v = (qw**2 - np.linalg.norm(qv)**2)*v + 2*(qv.T @ v)*qv + 2*qw*np.cross(qv, v, axis=0)
+    qx = quat[0, 0]
+    qy = quat[1, 0]
+    qz = quat[2, 0]
+    qw = quat[3, 0]
+    vx = v[0]
+    vy = v[1]
+    vz = v[2]
+    rot_v = np.zeros((3, 1))
+    rot_v[0] = (qw**2 + qx**2 - qy**2 - qz**2)*vx + 2 * \
+        (qx*qy - qw*qz)*vy + 2*(qx*qz + qw*qy)*vz
+
+    rot_v[1] = 2*(qx*qy + qw*qz)*vx + (qw**2 - qx**2 +
+                                       qy**2 - qz**2)*vy + 2*(qy*qz - qw*qx)*vz
+
+    rot_v[2] = 2*(qx*qz - qw*qy)*vx + 2*(qy*qz + qw*qx) * \
+        vy + (qw**2 - qx**2 - qy**2 + qz**2)*vz
     return rot_v
-    
+
+
 def getAFunc(bmx, dt):
     def AFunc():
         gyro = bmx.getGyro()
-        #gyro[2] = 0
+        # gyro[2] = 0
         Ac = 0.5 * getScewMat(*gyro)
         return np.eye(4) + Ac * dt
 
     return AFunc
+
 
 def getCFunc(g, mag):
     def CFunc(q):
@@ -73,32 +91,35 @@ def getCFunc(g, mag):
         return C
     return CFunc
 
+
 def getObsFunc(bmx):
     def obsFunc():
-        acc = np.array(bmx.getAcc())[:, np.newaxis].reshape(3,1)
+        acc = np.array(bmx.getAcc())[:, np.newaxis].reshape(3, 1)
         acc = acc / np.linalg.norm(acc) * 9.8
         obs_g = acc
         # print(f"obs_g : {obs_g}")
-        mag = np.array(bmx.getMagnet())[:, np.newaxis].reshape(3,1)
-        mag = mag / np.linalg.norm(mag) *9.8
+        mag = np.array(bmx.getMagnet())[:, np.newaxis].reshape(3, 1)
+        mag = mag / np.linalg.norm(mag) * 9.8
         obs_mag = mag
 
-        obs_vec = np.zeros((6,1))
+        obs_vec = np.zeros((6, 1))
         obs_vec[:3] = obs_g
         obs_vec[3:6] = obs_mag
 
         return obs_vec
     return obsFunc
 
+
 def getPredFunc(g, mag):
-    g_vec = np.array(g)[:, np.newaxis].reshape(3,1)
-    mag_vec = np.array(mag)[:,np.newaxis].reshape(3,1)
+    g_vec = np.array(g)[:, np.newaxis].reshape(3, 1)
+    mag_vec = np.array(mag)[:, np.newaxis].reshape(3, 1)
     mag_vec = mag_vec / np.linalg.norm(mag_vec)
+
     def predFunc(q):
         rot_g = rotate(q, g_vec)
         rot_mag = rotate(q, mag_vec)
         # print(f"rot_g : {rot_g}")
-        rot_vec = np.zeros((6,1))
+        rot_vec = np.zeros((6, 1))
         print("rot_g", rot_g)
         rot_vec[:3] = rot_g
         rot_vec[3:6] = rot_mag
@@ -116,7 +137,6 @@ def calcNTheta(quat):
     return n_vec, theta
 
 
-
 def main():
     host = "192.168.12.50"
     port = 20021
@@ -126,9 +146,9 @@ def main():
     np.set_printoptions(suppress=True)
     bmx = BMX055()
     x_offset, y_offset, z_offset = calibrateAccXYZ(bmx)
-    bmx.acc_offset=[x_offset, y_offset, z_offset - 9.8]
+    bmx.acc_offset = [x_offset, y_offset, z_offset - 9.8]
     x_offset, y_offset, z_offset = calibrateGyroXYZ(bmx)
-    #bmx.gyro_offset=[x_offset, y_offset, z_offset]
+    # bmx.gyro_offset=[x_offset, y_offset, z_offset]
     x_offset, y_offset, z_offset = calibrateMagnetXYZ(bmx)
     g_base = np.array([0, 0, 9.8])
     mag_base = np.array([x_offset, y_offset, z_offset])
@@ -144,8 +164,9 @@ def main():
     initial_cov = np.diag([0.5, 0.5, 0.5, 0.5])
     update_cov = np.diag([0.05, 0.05, 0.05, 0.05])
     obs_cov = np.diag([0.001, 0.001, 0.001, 0.1, 0.1, 0.1])
-    ekf = EKF(initial_x, initial_cov, A_func, C_func, pred_func, update_cov, obs_cov)
-    
+    ekf = EKF(initial_x, initial_cov, A_func,
+              C_func, pred_func, update_cov, obs_cov)
+
     prev_time = time.time()
     prev_print_time = time.time()
     while True:
@@ -160,7 +181,8 @@ def main():
         est_q = ekf.x
         mag_x, mag_y, mag_z = bmx.getMagnet()
         abs_mag = (mag_x**2 + mag_y**2 + mag_z**2)**0.5
-        q_str = f"{est_q[3, 0]} {est_q[0, 0]} {est_q[1,0]} {est_q[2, 0]} {mag_x/abs_mag} {mag_y/abs_mag} {mag_z/abs_mag}" # w, x, y, z の順に並べる
+        # w, x, y, z の順に並べる
+        q_str = f"{est_q[3, 0]} {est_q[0, 0]} {est_q[1,0]} {est_q[2, 0]} {mag_x/abs_mag} {mag_y/abs_mag} {mag_z/abs_mag}"
         data_server.setSendData(q_str)
         cycle_time = time.time() - prev_time
         sleep_time = dt - cycle_time
@@ -170,7 +192,5 @@ def main():
             time.sleep(sleep_time)
 
 
-
 if __name__ == "__main__":
     main()
-
