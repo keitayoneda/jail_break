@@ -2,14 +2,16 @@ from dynamixel_driver import dynamixel_io
 import sys
 import time
 import math
+from typing import List
 
-def checkConnection(dxl_io, ids):
+def checkConnection(dxl_io:dynamixel_io.DynamixelIO, ids:List[int]):
     for each_id in ids:
         if dxl_io.ping(each_id):
             print('[SUCCESS] : id %d respond to a ping' % each_id)
         else:
             print('[ERROR] : id %d not respond.' % each_id)
             sys.exit(1)
+
 class SingleDxlServo:
     def __init__(self, dxl_io:dynamixel_io.DynamixelIO, dxl_id:int):
         self.io:dynamixel_io.DynamixelIO = dxl_io
@@ -43,11 +45,11 @@ class SingleDxlServo:
         omega = val*self.vel_scale*(360/60)
         return omega
 
-    def setAngle(self, dest_angle):
+    def setAngle(self, dest_angle:float):
         dest_val = self.__calcValFromAngle(dest_angle)
         self.res = self.io.set_position(self.id, dest_val)
 
-    def setAngleAndOmega(self, dest_angle, dest_omega):
+    def setAngleAndOmega(self, dest_angle:float, dest_omega:float):
         dest_angle_val = self.__calcValFromAngle(dest_angle)
         dest_omega_val = self.__calcValFromOmega(dest_omega)
         self.res = self.io.set_position_and_speed(self.id, dest_angle_val, dest_omega_val)
@@ -61,7 +63,7 @@ class SingleDxlServo:
         ret_val = self.io.get_speed(self.id)
         return self.__calcOmegaFromVal(ret_val)
 
-def main():
+def test():
     port = "/dev/ttyUSB0"
     baudrate = 1000000
     dxl_id = 1
@@ -76,16 +78,16 @@ def main():
 
     servo = SingleDxlServo(dxl_io, dxl_id)
 
-    for i in range(3):
+    for _ in range(3):
         start = time.time()
         while time.time() - start < 6:
             t = time.time() - start
             dest_angle = 90*math.sin(t*math.pi)
-            dest_omega = 90*180*math.cos(t*math.pi)
+            dest_omega = 90*math.cos(t*math.pi)
             servo.setAngleAndOmega(dest_angle, dest_omega)
             print("angle=", servo.getAngle())
             print("omega=", servo.getOmega())
             time.sleep(0.001)
 
 if __name__ == "__main__":
-    main()
+    test()
