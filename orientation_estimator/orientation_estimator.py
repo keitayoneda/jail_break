@@ -9,6 +9,7 @@ import numpy as np
 
 
 def getScewMat(wx, wy, wz):
+    wz *= -1
     return np.array([[0, -wx, wy, -wz],
                      [wx, 0, -wz, wy],
                      [wy, wz, 0, -wx],
@@ -31,6 +32,37 @@ def rotate(quat, v):
     rot_v[2] = q_w*(q_w*v_z + q_x*v_y - q_y*v_x) + q_x*(q_w*v_y - q_x*v_z + q_z*v_x) - \
         q_y*(q_w*v_x + q_y*v_z - q_z*v_y) + q_z*(q_x*v_x + q_y*v_y + q_z*v_z)
     return rot_v
+
+
+def rotateQuat(p, q):
+    ret_quat = np.zeros((4,1))
+
+    p_w = p[0, 0]
+    p_x = p[1, 0]
+    p_y = p[2, 0]
+    p_z = p[3, 0]
+    
+    q_w = q[0, 0]
+    q_x = q[1, 0]
+    q_y = q[2, 0]
+    q_z = q[3, 0]
+
+    ret_quat[0, 0] = p_w*q_w - p_x*q_x - p_y*q_y - p_z*q_z
+    ret_quat[1, 0] = p_w*q_x + p_x*q_w + p_y*q_z - p_z*q_y
+    ret_quat[2, 0] = p_w*q_y - p_x*q_z + p_y*q_w + p_z*q_x
+    ret_quat[3, 0] = p_w*q_z + p_x*q_y - p_y*q_x + p_z*q_w
+
+    return ret_quat
+    
+def dettiageRotate(quat):
+    # X軸のZ軸回り回転量が0になるようにでっち上げる
+    x_vec = np.array([1.0, 0.0, 0.0])
+    rot_x_vec = rotate(quat, x_vec).reshape(3,)
+    th = np.arctan2(rot_x_vec[1], rot_x_vec[0])
+    # Z軸回りに-th回転するquaternionをquatにかける
+    delta_quat = np.array([[np.cos(-th/2)], [0.0], [0.0], [np.sin(-th/2)]])
+    ret_quat = rotateQuat(delta_quat, quat)
+    return ret_quat
 
 
 def getAFunc(bmx, dt):
@@ -74,14 +106,9 @@ def getObsFunc(bmx):
         acc = np.array(bmx.getAcc())[:, np.newaxis].reshape(3, 1)
         acc = acc / np.linalg.norm(acc) * 9.8
         obs_g = acc
-        # print(f"obs_g : {obs_g}")
-        # mag = np.array(bmx.getMagnet())[:, np.newaxis].reshape(3, 1)
-        # mag = mag / np.linalg.norm(mag) * 9.8
-        # obs_mag = mag
 
         obs_vec = np.zeros((3, 1))
         obs_vec[:3] = obs_g
-        # obs_vec[3:6] = obs_mag
         return obs_vec
     return obsFunc
 
@@ -116,7 +143,7 @@ def main():
     x_offset, y_offset, z_offset = calibrateAccXYZ(bmx)
     bmx.acc_offset = [x_offset, y_offset, z_offset - 9.8]
     x_offset, y_offset, z_offset = calibrateGyroXYZ(bmx)
-    # bmx.gyro_offset=[x_offset, y_offset, z_offset]
+    bmx.gyro_offset=[x_offset, y_offset, z_offset]
     x_offset, y_offset, z_offset = calibrateMagnetXYZ(bmx)
     g_base = np.array([0, 0, 9.8])
     mag_base = np.array([x_offset, y_offset, z_offset])
@@ -128,7 +155,7 @@ def main():
     C_func = getCFunc(g_base)
     pred_func = getPredFunc(g_base)
     obs_func = getObsFunc(bmx)
-    initial_x = np.array([[0.0], [0.0], [0.0], [1.0]])
+    initial_x = np.array([[1.0], [0.0], [0.0], [0.0]])
     initial_cov = np.diag([0.5, 0.5, 0.5, 0.5])
     update_cov = np.diag([0.05, 0.05, 0.05, 0.05])
     obs_cov = np.diag([0.001, 0.001, 0.001])
@@ -146,7 +173,16 @@ def main():
         ekf.normalizeX()
         ekf.observe(obs_func())
         ekf.normalizeX()
-        est_q = ekf.x
+        # est_q = ekf.x
+        est_q = dettiageRotate(ekf.x)
+        rot_g = rotate(est_q, [0, 0, 9.8])
+        # print(f"rot_x = {rot_g.reshape(3,)}")
+        rot_x = rotate(est_q, [100, 0, 0])
+        # print(f"rot_x = {rot_x.reshape(3,)}")
+        rot_y = rotate(est_q, [0, 100, 0])
+        # print(f"rot_y = {rot_y.reshape(3,)}")
+        rot_z = rotate(est_q, [0, 0, 100])
+        # print(f"rot_z = {rot_z.reshape(3,)}")
         mag_x, mag_y, mag_z = bmx.getMagnet()
         abs_mag = (mag_x**2 + mag_y**2 + mag_z**2)**0.5
         # w, x, y, z の順に並べる

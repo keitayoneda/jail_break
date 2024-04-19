@@ -5,12 +5,12 @@ import time
 # ひたすらデータ要求が来たら返すサーバー
 class DataServer:
     def __init__(self):
-        self.host_address = "192.168.1.211"
+        self.host_address = "192.168.10.50"
         self.host_port = 20021
         self.socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
         self.socket.bind((self.host_address, self.host_port))
         self.connected_history=[]
-        self.max_connect_num = 1
+        self.max_connect_num = 2
         self.send_data_str = "this is data"
 
     def startAndDetach(self):

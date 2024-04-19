@@ -52,7 +52,13 @@ class SingleDxlServo:
     def setAngleAndOmega(self, dest_angle:float, dest_omega:float):
         dest_angle_val = self.__calcValFromAngle(dest_angle)
         dest_omega_val = self.__calcValFromOmega(dest_omega)
-        self.res = self.io.set_position_and_speed(self.id, dest_angle_val, dest_omega_val)
+        try:
+            self.res = self.io.set_position_and_speed(self.id, dest_angle_val, dest_omega_val)
+        except dynamixel_io.DroppedPacketError as e:
+            print(e)
+        except dynamixel_io.ChecksumError as e:
+            print(e)
+            
 
 
     def getAngle(self):

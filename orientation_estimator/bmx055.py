@@ -11,11 +11,18 @@ class BMX055:
         self.gyro_register_address = 0x02
         self.magnet_i2c_address = 0x13
         self.magnet_register_address = 0x42
+        time.sleep(0.5)
         # acc
         # -2g~2g
         self.i2c.write_byte_data(self.acc_i2c_address, 0x0f, 0x03)
         # 125Hz
         self.i2c.write_byte_data(self.acc_i2c_address, 0x10, 0x0c)
+        time.sleep(0.5)
+
+        #gyro
+        # 
+        self.i2c.write_byte_data(self.gyro_i2c_address, 0x0f, 0x02)
+        time.sleep(0.5)
 
         # magnet
         self.i2c.write_byte_data(self.magnet_i2c_address, 0x4b, 0x01) # power bit turn to 1
@@ -55,7 +62,7 @@ class BMX055:
         return value
 
     def _calcGyro(self, value):
-        factor = 2000/(2**15)*3.141592/180
+        factor = 500/(2**15)*3.141592/180
         return value*factor
 
     
@@ -117,22 +124,23 @@ class BMX055:
 def main():
     bmx055 = BMX055()
     integrated_val = [0, 0, 0]
-    dt = 0.1
+    dt = 0.05
     while True:
         bmx055.updateAcc()
         bmx055.updateGyro()
         bmx055.updateMagnet()
-        bmx055.printMagnetScale()
+        #bmx055.printMagnetScale()
         time.sleep(dt)
         acc  = bmx055.getAcc()
         abs_acc = (acc[0]**2 + acc[1]**2 + acc[2]**2)**0.5
-        bmx055.printAcc()
+        # bmx055.printAcc()
         # bmx055.printGyro()
         gyro = bmx055.getGyro()
         integrated_val[0] += gyro[0]*dt
         integrated_val[1] += gyro[1]*dt
         integrated_val[2] += gyro[2]*dt
-        #print(integrated_val)
+        print("int")
+        print(integrated_val)
 
 
 if __name__ == "__main__":

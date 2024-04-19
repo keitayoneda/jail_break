@@ -20,8 +20,8 @@ class EKF:
         Sn = C @ self.cov @ C.T + self.obs_cov
         pred_y = self.pred_func(self.x)
         delta_y = y - pred_y
-        print(f"y: {y}")
-        print(f"pred_y: {pred_y}")
+        #print(f"y: {y}")
+        #print(f"pred_y: {pred_y}")
         kalman_gain = self.cov @ C.T @ np.linalg.inv(Sn + C @ self.cov @ C.T)
 
         self.x = self.x + kalman_gain @ delta_y

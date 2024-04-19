@@ -7,13 +7,13 @@ class Climber:
     def __init__(self, servos):
         self.servos = servos
         self.signs = [1, -1, -1, 1, 1, -1]
-        self.fast_omega = 6
+        self.fast_omega = 8
         self.omega = 2
         self.slow_omega = 1
         self.fix_angle = [-8, -3, -8, -8, -3, -8] # 突っ張る角度
         self.lower_angle = [-27, -27, -27, -27, -27, -27] # 登るときに足を下げる角度
-        self.max_angle = 42 # 足を上に戻すときに上げる角度
-        self.init_angle = 42 # 最初に足をセットする角度
+        self.max_angle = 46 # 足を上に戻すときに上げる角度
+        self.init_angle = 46 # 最初に足をセットする角度
         self.servo_num = len(servos)
 
     def target_leg_fast(self, index, angle):
@@ -40,13 +40,15 @@ class Climber:
     def fix_leg(self, index):
         for each_index in index:
             self.target_leg_fast(each_index, self.fix_angle[each_index])
-    def fix_leg2(self, index, angle):
-        self.target_leg_fast(index, angle)
 
     def elevate_body(self):
         # すべての足を下に下げて胴体を上に上げる
         for each_index in range(self.servo_num):
-            self.target_leg(each_index, self.lower_angle[each_index])
+            self.target_leg_fast(each_index, self.lower_angle[each_index])
+
+    def elevate_body2(self, angles):
+        for each_index, angle in enumerate(angles):
+            self.target_leg_fast(each_index, angle)
 
 
 def main():
@@ -63,30 +65,20 @@ def main():
     servos = [servo.SingleDxlServo(dxl_io, dxl_id) for dxl_id in ids]
 
     climber = Climber(servos)
-    time.sleep(1)
-    print("elevate_body")
-    climber.elevate_body()
-    time.sleep(1.5)
-    climber.elevate_leg([0])
-    time.sleep(1.5)
-    climber.fix_leg([0])
-    time.sleep(1)
-    climber.elevate_leg([2])
-    time.sleep(1)
-    climber.fix_leg([2])
-    time.sleep(1)
-    climber.elevate_leg([3])
-    time.sleep(1)
-    climber.fix_leg([3])
-    time.sleep(1)
-    climber.elevate_leg([5])
-    time.sleep(1)
-    climber.fix_leg([5])
-    time.sleep(1)
-    climber.elevate_leg([1, 4])
-    time.sleep(1)
-    climber.fix_leg([1, 4])
-
+    while True:
+        str_in = input("input action: ")
+        if str_in == "q":
+            break
+        print("elevate_body")
+        climber.elevate_body()
+        time.sleep(0.5)
+        leg_index = [[0, 3], [2, 5], [1, 4]]
+        for leg in leg_index:
+            climber.elevate_leg(leg)
+            time.sleep(0.4)
+            climber.fix_leg(leg)
+            time.sleep(0.3)
+    climber.init_pose()
 
     print("end")
 
